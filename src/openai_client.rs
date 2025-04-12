@@ -1,4 +1,3 @@
-
 pub struct OpenAIClient {
     api_key: String,
     base_url: String,
@@ -9,8 +8,8 @@ pub struct OpenAIClient {
 /// deepseek-chat
 impl OpenAIClient {
     pub fn new(api_key: String, base_url: String) -> Self {
-        OpenAIClient { 
-            api_key, 
+        OpenAIClient {
+            api_key,
             base_url,
             client: reqwest::Client::new(),
         }
@@ -27,14 +26,18 @@ impl OpenAIClient {
     pub async fn talk(&self, prompt: &str) -> Result<String, reqwest::Error> {
         let url = format!("{}/chat/completions", self.base_url);
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", self.api_key).parse().unwrap());
+        headers.insert(
+            "Authorization",
+            format!("Bearer {}", self.api_key).parse().unwrap(),
+        );
         headers.insert("Content-Type", "application/json".parse().unwrap());
         headers.insert("Accept", "application/json".parse().unwrap());
         headers.insert("Accept-Encoding", "gzip".parse().unwrap());
-        headers.insert("User-Agent", "DeepSeek".parse().unwrap());
         headers.insert("Connection", "keep-alive".parse().unwrap());
 
-        let mut response = self.client.post(&url)
+        let mut response = self
+            .client
+            .post(&url)
             .headers(headers)
             .json(&serde_json::json!({
             "model": "deepseek-chat",
@@ -53,20 +56,23 @@ impl OpenAIClient {
             return Err(response.error_for_status().unwrap_err());
         }
         while let Some(chunk) = response.chunk().await? {
-            println!("{}", std::str::from_utf8(&chunk).unwrap());
-            if let Ok(text) = std::str::from_utf8(&chunk) {
-                let text = text.strip_prefix("data: ").unwrap_or(text);
-                if let Ok(json) = serde_json::from_str::<serde_json::Value>(text) {
-                    if let Some(content) = json["choices"][0]["delta"]["content"].as_str() {
-                        println!("{}", content);
-                    }else {
-                        println!("No content found in JSON: {}", text);
+            let data = std::str::from_utf8(&chunk).unwrap();
+            let text = data.strip_prefix("data: ").unwrap_or("");
+            let json = serde_json::from_str::<serde_json::Value>(text).unwrap();
+            if let Some(choices) = json["choices"].as_array() {
+                for choice in choices {
+                    if let Some(delta) = choice["delta"].as_object() {
+                        if let Some(content) = delta["content"].as_str() {
+                            println!("Content: {}", content);
+                        } else {
+                            println!("No content found in delta");
+                        }
+                    } else {
+                        println!("No delta found in choice");
                     }
-                }else {
-                    println!("Failed to parse JSON: {}", text);
                 }
-            }else {
-                println!("Failed to convert chunk to string");
+            } else {
+                println!("No choices found in JSON: {}", text);
             }
         }
 
