@@ -1,6 +1,6 @@
 use reqwest::{self, header};
 use serde_json::Value;
-use futures_util::StreamExt; // Import StreamExt for the `next` method
+use futures::StreamExt; // Import StreamExt for the `next` method
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -28,7 +28,7 @@ async fn main() -> Result<(), reqwest::Error> {
             "messages": [
                 {
                     "role": "user",
-                    "content": "你好，今天的天气怎么样？",
+                    "content": "Hello, how are you?",
                 }
             ]
         }))

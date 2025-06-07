@@ -58,6 +58,7 @@ impl OpenAIClient {
         while let Some(chunk) = response.chunk().await? {
             let data = std::str::from_utf8(&chunk).unwrap();
             let text = data.strip_prefix("data: ").unwrap_or("");
+            println!("Received chunk: {}", text);
             let json = serde_json::from_str::<serde_json::Value>(text).unwrap();
             if let Some(choices) = json["choices"].as_array() {
                 for choice in choices {
